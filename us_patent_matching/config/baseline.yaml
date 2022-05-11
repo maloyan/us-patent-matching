@@ -1,0 +1,10 @@
+num_folds: 5
+n_gpu: 2
+data_path: '/root/us_patent_matching/input'
+model_path: anferico/bert-for-patents #xlm-roberta-large-finetuned-conll03-english #'microsoft/deberta-v3-large' #
+
+learning_rate: 0.00002
+weight_decay: 0.01
+epochs: 5
+batch_size: 32
+checkpoints: '/root/us_patent_matching/checkpoints'
