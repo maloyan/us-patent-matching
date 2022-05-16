@@ -5,10 +5,9 @@ import pandas as pd
 import torch
 from omegaconf import DictConfig, OmegaConf
 from sklearn.model_selection import KFold, StratifiedKFold
-from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
-from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
-                          Trainer, TrainingArguments,
+from transformers import (AdamW, AutoModelForSequenceClassification,
+                          AutoTokenizer, Trainer, TrainingArguments,
                           get_linear_schedule_with_warmup)
 
 from us_patent_matching.dataset import USPatentDataset
@@ -102,7 +101,7 @@ def main(config: DictConfig):
     label = oof_df['score'].values
     eval_pred = predictions, label
     compute_metrics(eval_pred)
-
+    oof_df.to_csv(f"{config.model_path}.csv", index=None)
 
 if __name__ == "__main__":
     main()

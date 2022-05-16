@@ -14,7 +14,7 @@ def sigmoid(x):
 
 class config:
     data_path = '/root/us_patent_matching/input' #'../input/us-patent-phrase-to-phrase-matching/'
-    m_path= '/root/us_patent_matching/checkpoints/hf/xlm-roberta-large-finetuned-conll03-english' #"../input/pppm-deberta-v3-large-closing-the-cv-lb-gap/"
+    m_path= '/root/us_patent_matching/checkpoints/anferico/bert-for-patents' #'/root/us_patent_matching/checkpoints/hf/xlm-roberta-large-finetuned-conll03-english' #"../input/pppm-deberta-v3-large-closing-the-cv-lb-gap/"
     batch_size=16
     num_workers=4
     num_folds=5
@@ -95,19 +95,22 @@ class USPatentDataset(Dataset):
             **inputs
         }
 
-test_df = pd.read_csv(f"{config.data_path}/test.csv")
+train_df = pd.read_csv(f"{config.data_path}/train_folds.csv")
 titles = pd.read_csv(f'{config.data_path}/titles.csv')
 
 cpc_texts = torch.load(f"{config.data_path}/cpc_texts.pth")
-test_df['context_text'] = test_df['context'].map(cpc_texts)
+train_df['context_text'] = train_df['context'].map(cpc_texts)
 
-test_df['text'] = test_df['anchor'] + '[SEP]' + test_df['target'] + '[SEP]'  + test_df['context_text']
+train_df['text'] = train_df['anchor'] + '[SEP]' + train_df['target'] + '[SEP]'  + train_df['context_text']
 
 tokenizer = AutoTokenizer.from_pretrained(f'{config.m_path}_0')
-test_dataset = USPatentDataset(test_df, tokenizer)
 
+oof_df = pd.DataFrame()
 predictions = []
 for fold in range(config.num_folds):
+    va_data = train_df[train_df['fold']==fold].reset_index(drop=True)
+    va_dataset = USPatentDataset(va_data, tokenizer)
+
     config.model_path = f"{config.m_path}_{fold}"
     model = CustomModel(config)
     model.load_state_dict(torch.load(f"{config.model_path}/pytorch_model.bin", map_location=config.device))
@@ -122,11 +125,10 @@ for fold in range(config.num_folds):
         args,
         tokenizer=tokenizer
     )
-    prediction = sigmoid(trainer.predict(test_dataset).predictions.reshape(-1))
+    prediction = sigmoid(trainer.predict(va_dataset).predictions.reshape(-1))
 
-    predictions.append(prediction)
+    va_data['preds'] = prediction
+    oof_df = pd.concat([oof_df, va_data])
 
-predictions = np.mean(predictions, axis=0)
 
-test_df['score'] = predictions
-test_df[['id', 'score']].to_csv('submission.csv', index=False)
+oof_df[['id', 'preds']].to_csv("oof_submision.csv", index=None)
