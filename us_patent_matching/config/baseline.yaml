@@ -6,5 +6,6 @@ model_path: microsoft/deberta-v3-large #roberta-large #xlm-roberta-large-finetun
 learning_rate: 0.00002
 weight_decay: 0.01
 epochs: 5
-batch_size: 32
+batch_size: 8 #32
+max_len: 256
 checkpoints: '/root/us_patent_matching/checkpoints'

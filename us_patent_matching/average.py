@@ -3,6 +3,9 @@ import numpy as np
 import pandas as pd
 #from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import Ridge
+from sklearn.preprocessing import MinMaxScaler
+
+MMscaler = MinMaxScaler()
 df_gt = pd.read_csv("/root/us_patent_matching/input/train.csv")[['id', 'score']]
 model_files = [
     'bert',
@@ -24,6 +27,9 @@ df_oof['id'] = pd.read_csv(f"/root/us_patent_matching/submissions/oof_{model_fil
 df = pd.merge(df_gt, df_oof, on='id')
 # clf = LogisticRegression(
 #     C=1, solver="newton-cg", penalty="l2", n_jobs=-1, max_iter=100
+for i in df.columns:
+    if i.startswith('preds'):
+        df[i] = MMscaler.fit_transform(df[i].values.reshape(-1, 1)).reshape(-1)
 clf = Ridge().fit(df[[i for i in df.columns if i.startswith('preds')]], df['score'])
 
 print([i for i in df.columns if i.startswith('preds')], clf.coef_)
